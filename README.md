@@ -4,6 +4,8 @@
 #### Project Description
 > React Auth based on jwt and passport authentication. 
 
+#### Application Credential
+> pradeep.vwa@gmail.com/root
 
 #### Rest APIs 
 
