@@ -1,122 +1,119 @@
-import React, { Component } from 'react';
-import TextField from '@material-ui/core/TextField';
+import React from 'react';
 import Button from '@material-ui/core/Button';
+import { ValidatorForm, TextValidator } from 'react-material-ui-form-validator';
 import axios from 'axios';
-import { Redirect } from "react-router-dom";
 import './LoginForm.scss';
+import { Redirect } from 'react-router-dom';
 
-class LoginForm extends Component {
-  
-  constructor(props){
-    super(props)
-    this.state = {
-      formData: {
-        email: '',
-        password: '',
-        isLoggedIn: false,
-        accessToken: ''
-      },
-      submitted: false
+export default class LoginForm extends React.Component {
+
+    constructor(props) {
+        super(props)
+        this.state = {
+            formData: {
+                email: '',
+                password: '',
+                isLoggedIn: false,
+                accessToken: ''
+            },
+            submitted: false,
+        }
     }
-  }
-  componentDidMount() {
+    
+   componentDidMount() {
     this.storeCollector();
-  }
-  /**
-   * Get the token from sessionStorage
-   */
-  storeCollector() {
-    let user = JSON.parse(sessionStorage.getItem('user'));
-    if(user && user.isLoggedIn) {
-      this.setState({isLoggedIn: true, accessToken: user.accessToken})
+   }
+
+   storeCollector() {
+       let user = JSON.parse(sessionStorage.getItem('user'));
+       if(user && user.isLoggedIn) {
+           this.setState({isLoggedIn: true, accessToken: user.accessToken});
+       }
+   }
+
+    handleChange = (event) => {
+        const { formData } = this.state;
+        formData[event.target.name] = event.target.value;
+        this.setState({ formData });
     }
-  }
 
-  handleChange = (event) => {
-    const { formData } = this.state;
-    formData[event.target.name] = event.target.value;
-    this.setState({ formData });
-    //console.log(JSON.stringify(formData));
-  }
+    handleSubmit = () => {
+        this.setState({ submitted: true }, () => {
+            setTimeout(() => this.setState({ 
+                formData: {
+                    email: '',
+                    password: '',
+                },
+                submitted: false
+             }), 5000);
+        });
 
-  /**
-   * Login Page
-   * @param {*} e 
-   */
-  handleLogin = (e) => {
-    e.preventDefault();
-    this.setState({ submitted: true }, () => {
-        setTimeout(() => this.setState({ 
-            submitted: false
-         }), 5000);
-    });
-
-    /**
-     * POST REQUEST
-     */
-    const { formData } = this.state;
-    console.log('formData: '+JSON.stringify(formData));
-    axios.post(`/api/post/login`, { formData })
+        /**
+         * POST REQUEST
+         */
+        const { formData } = this.state;
+        console.log(formData);
+        axios.post(`/api/post/login`, { formData })
       .then(res => {
-        const result = res.data.recordset;
-        this.setState({ result });
-        console.log("accessToken: " + JSON.stringify(res.data.accessToken));
+          const result = res.data.recordset;
+          this.setState({ result });
+          console.log("accessToken: " + JSON.stringify(res.data.accessToken));
 
-        sessionStorage.setItem('user', JSON.stringify({
-          isLoggedIn: true,
-          accessToken: res.data.accessToken
-        }))
-        this.storeCollector();
+          sessionStorage.setItem('user', JSON.stringify({
+              isLoggedIn: true,
+              accessToken: res.data.accessToken
+          }))
+          this.storeCollector();
       })
     }
 
-  render() {
-    /**
-     * After successful login redirect to Home Page
-     */
-    if (this.state.isLoggedIn) {
-      return <Redirect to="/home" />
+    render() {
+        /**
+         * Redirect to Home Page
+         */
+        if(this.state.isLoggedIn) {
+            return <Redirect to="/home" />
+        }
+        const { formData, submitted } = this.state;
+        return (
+        <div className="LoginForm">
+            <ValidatorForm
+                ref="form"
+                onSubmit={this.handleSubmit}
+            >
+                <h2>Log In</h2>
+                <TextValidator
+                    label="Email"
+                    onChange={this.handleChange}
+                    name="email"
+                    value={formData.email}
+                    validators={['required', 'isEmail']}
+                    errorMessages={['this field is required', 'email is not valid']}
+                />
+                <br />
+                <TextValidator
+                    label="Password"
+                    onChange={this.handleChange}
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    validators={['required']}
+                    errorMessages={['this field is required']}
+                />
+                <br /><br /><br />
+                <Button
+                    color="primary"
+                    variant="contained"
+                    type="submit"
+                    disabled={submitted}
+                >
+                    {
+                        (submitted && 'Your form is submitted!')
+                        || (!submitted && 'Submit')
+                    }
+                </Button>
+            </ValidatorForm>
+         </div>
+        );
     }
-    return (
-        <section id="entry-page">
-          <form 
-                noValidate 
-                autoComplete="off" 
-                onSubmit={this.handleLogin}
-                method="post">
-            <h2>Log In <hr/></h2>
-            <fieldset>
-              <TextField 
-                  label="Email" 
-                  variant="outlined" 
-                  className="login-input-box"
-                  onChange={this.handleChange}
-                  name="email"
-                  value={this.state.formData.email || ""}
-              />
-              <TextField 
-                  label="Password" 
-                  variant="outlined" 
-                  className="login-input-box" 
-                  type="password" 
-                  onChange={this.handleChange}
-                  name="password"
-                  value={this.state.formData.password || ""}                  
-              />
-            </fieldset>
-            <Button 
-                  variant="contained"
-                  type="submit"
-                  disabled={this.state.submitted}
-            >{
-                (this.state.submitted && 'Please Wait...')
-                || (!this.state.submitted && 'Login')
-             }
-            </Button>
-          </form>
-      </section>
-    )
-  }
 }
-
-export default LoginForm;
